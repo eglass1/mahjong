@@ -1,0 +1,28 @@
+{
+  "name": "mahjong-table",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "test": "node --test src/engine.test.js",
+    "test:ui": "node --test tests/dom.test.js",
+    "test:browser": "node tests/browser.mjs",
+    "validate:card": "node scripts/validate-card.mjs"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^7.3.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.9.10",
+    "vite": "^7.1.0",
+    "vite-plugin-singlefile": "^2.3.0"
+  }
+}

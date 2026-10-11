@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+playwright-report/
+test-results/
+
+# Private card data: obtain separately; never distribute.
+card.json
