@@ -1024,3 +1024,71 @@ footer button {
     flex-direction: column;
   }
 }
+/* Installation and device-safe spacing without disabling browser zoom. */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+header {
+  padding-top: env(safe-area-inset-top);
+  min-height: 98px;
+  height: auto;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.install-status {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+.install-status > span {
+  font-size: 9px;
+  color: #6e8165;
+  line-height: 1.4;
+}
+.storage-notice {
+  margin-bottom: 20px;
+}
+button {
+  touch-action: manipulation;
+}
+@media (max-width: 800px) {
+  .header-actions {
+    margin-left: auto;
+    gap: 8px;
+  }
+  .header-actions button {
+    min-height: 44px;
+    font-size: 12px;
+  }
+  header {
+    padding-top: max(18px, env(safe-area-inset-top));
+  }
+  .MuiDialog-paper {
+    max-height: calc(100dvh - 48px) !important;
+  }
+  .card-controls select,
+  .variation-picker select {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .opponent .tile.small {
+    min-height: 44px;
+  }
+}
+@media (max-width: 480px) {
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .install-status > button {
+    padding-left: 0;
+  }
+  .human .MuiFormControlLabel-root {
+    min-height: 44px;
+  }
+}

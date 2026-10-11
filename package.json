@@ -6,10 +6,13 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "test": "node --test src/engine.test.js",
-    "test:ui": "node --test tests/dom.test.js",
+    "test": "node --test src/engine.test.js src/card-storage.test.js",
+    "test:ui": "node --test tests/dom.test.js tests/persistence.test.js",
     "test:browser": "node tests/browser.mjs",
-    "validate:card": "node scripts/validate-card.mjs"
+    "validate:card": "node scripts/validate-card.mjs",
+    "test:pwa": "node --test tests/pwa.test.js",
+    "icons": "node scripts/generate-icons.mjs",
+    "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -17,6 +17,8 @@ import {
 } from "@mui/material";
 import * as E from "./engine";
 import "./style.css";
+import { readSavedCard, saveCard, forgetCard } from "./card-storage.js";
+import { AppInstallation } from "./pwa.jsx";
 const theme = createTheme({
   palette: {
     primary: { main: "#245e4c" },
@@ -101,12 +103,25 @@ const lessons = [
   ],
 ];
 function App() {
-  const [card, setCard] = useState(E.PRACTICE),
-    [cardTitle, setCardTitle] = useState("Original practice card"),
-    [game, setGame] = useState(() => E.newGame()),
+  const [initialCard] = useState(readSavedCard);
+  const [cardData, setCardData] = useState(initialCard.data);
+  const [cardSaved, setCardSaved] = useState(!!initialCard.data);
+  const [storageNotice, setStorageNotice] = useState(initialCard.warning);
+  const [confirmForget, setConfirmForget] = useState(false);
+  const [card, setCard] = useState(initialCard.data?.hands || E.PRACTICE),
+    [cardTitle, setCardTitle] = useState(
+      initialCard.data?.title ||
+        (initialCard.data ? "Imported 2026 card" : "Original practice card"),
+    ),
+    [game, setGame] = useState(() =>
+      E.newGame(initialCard.data?.hands || E.PRACTICE),
+    ),
     [selected, setSelected] = useState([]),
     [detail, setDetail] = useState(null),
-    [tab, setTab] = useState("table"),
+    [tab, setTab] = useState(() => {
+      const view = new URL(location.href).searchParams.get("view");
+      return ["card", "guide"].includes(view) ? view : "table";
+    }),
     [cardSection, setCardSection] = useState("All sections"),
     [error, setError] = useState(""),
     [hints, setHints] = useState(true),
@@ -202,6 +217,8 @@ function App() {
         throw Error("Choose a JSON card smaller than 2 MB.");
       const data = JSON.parse(await file.text());
       const hands = E.validateCard(data);
+      setCardData(data);
+      rememberCard(data);
       setCard(hands);
       setCardSection("All sections");
       setCardTitle(data.title || "Imported 2026 card");
@@ -214,6 +231,40 @@ function App() {
       setError(`Card import: ${e.message}`);
     }
     event.target.value = "";
+  }
+  function rememberCard(data) {
+    try {
+      saveCard(data);
+      setCardSaved(true);
+      setStorageNotice("");
+    } catch {
+      setCardSaved(false);
+      setStorageNotice(
+        "This card is loaded for this session only: device storage could not save it. Allow website storage or free space, then choose Save card in Manage card. Any previously saved card will still be used when you reopen the app.",
+      );
+    }
+  }
+  function removeSavedCard() {
+    try {
+      forgetCard();
+      setCardData(null);
+      setCardSaved(false);
+      setStorageNotice("");
+      setCard(E.PRACTICE);
+      setCardTitle("Original practice card");
+      setGame(E.newGame());
+      setHistory([]);
+      setSelected([]);
+      setError("");
+      setCardSection("All sections");
+      setDetail(null);
+      setConfirmForget(false);
+    } catch {
+      setStorageNotice(
+        "The saved card could not be removed. Allow website storage and try again, or remove this site’s data in your browser settings.",
+      );
+      setConfirmForget(false);
+    }
   }
   function download() {
     const a = document.createElement("a");
@@ -279,9 +330,12 @@ function App() {
             </button>
           ))}
         </nav>
-        <Button variant="outlined" onClick={() => setConfirm(true)}>
-          New hand ↗
-        </Button>
+        <div className="header-actions">
+          <AppInstallation />
+          <Button variant="outlined" onClick={() => setConfirm(true)}>
+            New hand ↗
+          </Button>
+        </div>
       </header>
       <main>
         <div className="page-heading">
@@ -316,7 +370,7 @@ function App() {
             <b>{cardTitle}</b> ·{" "}
             {card === E.PRACTICE
               ? "These teaching patterns are not the official 2026 NMJL card. Import your transcribed or licensed definitions to play those hands."
-              : "Playing your supplied 2026 definitions. Accuracy and completeness depend on the imported data."}
+              : `Playing your supplied 2026 definitions. ${cardSaved ? "Saved on this device for next time." : "Not saved; this session only."}`}
           </div>
           <Button
             size="small"
@@ -327,6 +381,11 @@ function App() {
             Manage card →
           </Button>
         </div>
+        {storageNotice && (
+          <Alert severity="warning" className="storage-notice">
+            {storageNotice}
+          </Alert>
+        )}
         {error && (
           <Alert severity="error" onClose={() => setError("")}>
             {error}
@@ -950,8 +1009,9 @@ function App() {
               <p>
                 Transcribe your card into the template or use data you are
                 authorized to use. Each legal suit/number variation needs a
-                separate expanded hand. Imported data stays in this browser tab;
-                no upload or account is needed.
+                separate expanded hand. Imported cards are saved on this device
+                and restored when you reopen the app. Nothing is uploaded; no
+                account is needed.
               </p>
               <p>
                 Tile codes: B1–B9 (bams), C1–C9 (craks), D1–D9 (dots), E/S/W/N
@@ -959,6 +1019,16 @@ function App() {
                 must total 14. Never combine unrelated singles into a
                 joker-eligible group.
               </p>
+              {cardData && (
+                <Alert severity={cardSaved ? "success" : "warning"}>
+                  {cardSaved
+                    ? `Saved on this device: ${cardTitle}`
+                    : "This card has not been saved. It is available for this session only."}
+                </Alert>
+              )}
+              {storageNotice && (
+                <Alert severity="warning">{storageNotice}</Alert>
+              )}
               <Button onClick={download}>Download example JSON</Button>
               <Button variant="contained" component="label">
                 Import 2026 JSON
@@ -969,16 +1039,44 @@ function App() {
                   onChange={importCard}
                 />
               </Button>
+              {cardData && !cardSaved && (
+                <Button onClick={() => rememberCard(cardData)}>
+                  Save card on this device
+                </Button>
+              )}
+              {(cardData || storageNotice) && (
+                <Button color="error" onClick={() => setConfirmForget(true)}>
+                  Forget saved card
+                </Button>
+              )}
               <p className="footnote">
                 The importer validates structure, not fidelity to the official
                 card. Include every permitted variation to make the active card
-                complete. Reloading returns to practice mode.
+                complete. Keep the original JSON file as a backup: clearing
+                website data, private browsing, or device storage cleanup can
+                remove saved cards. Installed apps may have separate storage;
+                import once inside the app if needed. Reopening starts a new
+                hand with your saved card.
               </p>
             </>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDetail(null)}>Back to the table</Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={confirmForget} onClose={() => setConfirmForget(false)}>
+        <DialogTitle>Forget the saved card?</DialogTitle>
+        <DialogContent>
+          This removes the saved card from this browser or app and starts a new
+          practice hand. Keep your original JSON file if you want to import it
+          again.
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmForget(false)}>Keep card</Button>
+          <Button color="error" onClick={removeSavedCard}>
+            Forget and use practice
+          </Button>
         </DialogActions>
       </Dialog>
       <Dialog open={confirm} onClose={() => setConfirm(false)}>
